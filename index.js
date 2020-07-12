@@ -4,8 +4,9 @@ const { reject } = require('q');
 const { Console } = require('console');
 const gm = require('gm').subClass({imageMagick: true});
 const PNG = require("pngjs").PNG;
-let pathToFolder = '/home/eugen/Pictures/wallpapers1';
+let pathToFolder = '/wallpapers';
 let pathToImage = '';
+let fileNames = new Array();
 
 let promiseImageScore = new Promise((resolve, reject) => {
   getImageScore(resolve, reject);
@@ -14,6 +15,7 @@ let promiseImageScore = new Promise((resolve, reject) => {
 function getImageScore(resolve, reject) {
   console.log('entered this promise....');
   let img = gm(pathToImage);
+  //console.log(img);
   // Get the PNG buffer
   img.toBuffer("PNG", (err, buff) => {
     if (err) return reject(err);
@@ -26,8 +28,10 @@ function getImageScore(resolve, reject) {
       }
       console.log('got image size...');
       // Parse the PNG buffer
+      console.log('got to the buffer');
       let str = new PNG();
       str.end(buff);
+      console.log('parsed buffer...');
       // After it's parsed...
       str.on("parsed", buffer => {
         // Get the pixels from the image
@@ -51,13 +55,28 @@ function getImageScore(resolve, reject) {
   });
 }
 
+async function logAllTheScores() {
+    for(let i = 0; i < fileNames.length; i++) {
+        pathToImage = fileNames[i];
+        promiseImageScore
+        .then(imageScore => {
+          console.log(file + ' has a score of ' + imageScore);
+        })
+        .catch(e => {
+          throw e;
+        });
+    }
+}
+
 // see which images are to be found in the specificd directory
 fs.readdir(pathToFolder, function (err, files) {
     if (err) return console.log('Unable to scan directory: ' + err);
     console.log('files in directory:\n');
     files.forEach(function (file) {
         pathToImage = pathToFolder + '/' + file;
+        fileNames.push(pathToImage);
         //showImageScore();
+        /*
         promiseImageScore
         .then(imageScore => {
           console.log(file + ' has a score of ' + imageScore);
@@ -65,5 +84,7 @@ fs.readdir(pathToFolder, function (err, files) {
         .catch(e => {
           throw e;
         })
+        */
     });
+    logAllTheScores();
 });
