@@ -1,0 +1,1 @@
+This repository has the purpouse of sorting images from a given folder by the darkness level. Therefore, this program would rename the images from the given parth, so that they are numbered from 0 to n, 0 being the brightest image and n (natural number) being the darkest image.
