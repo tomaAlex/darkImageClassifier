@@ -9,6 +9,7 @@ let pathToImage = '';
 let fileNames = new Array();
 let files; // save files from given directory in global variable
            // so that promises can execute after `readdir` method
+let fileScores = new Array();
 
 function promiseImageScore() {
   return new Promise((resolve, reject) => {
@@ -25,6 +26,18 @@ function prmoiseSavingFileNames() {
 function promiseReadingDir() {
   return new Promise((resolve, reject) => {
     readDir(resolve, reject);
+  });
+}
+
+function promiseSaveAllTheScores() {
+  return new Promise((resolve, reject) => {
+    saveAllTheScores(resolve, reject);
+  });
+}
+
+function promiseOrderImagesByScore() {
+  return new Promise((resolve, reject) => {
+    orderImagesByScore(resolve, reject);
   });
 }
 
@@ -64,13 +77,30 @@ function getImageScore(resolve, reject) {
   });
 }
 
-function logAllTheScores() {
+function checkAllScoresAreSaved() {
+  if(fileScores.length != fileNames.length) return false;
+  for(let i = 0; i < fileScores.length; i++)
+    if(fileScores[i] < 0) return false;
+  return true;
+}
+
+function checkScoresAreOrdered() {
+  for(let i = 0; i < fileScores.length - 1; i++)
+    if(fileScores[i] < fileScores[i + 1]) return false;
+  return true;
+}
+
+function saveAllTheScores(resolve, reject) {
     for(let i = 0; i < fileNames.length; i++) {
         pathToImage = fileNames[i];
         let localPathToImage = pathToImage;
+        let localIndex = i;
+        fileScores.push(-1);
         promiseImageScore()
         .then(imageScore => {
-          console.log(localPathToImage + ' has a score of ' + imageScore);
+          //console.log(localPathToImage + ' has a score of ' + imageScore);
+          fileScores[localIndex] = imageScore;
+          if(checkAllScoresAreSaved()) resolve();
         })
         .catch(e => {
           throw e;
@@ -99,13 +129,53 @@ function readDir(resolve, reject) {
   });
 }
 
+function logFilesWithTheirScores() {
+  for(let i = 0; i < fileNames.length; i++) 
+    console.log(fileNames[i] + ' has a score of ' + fileScores[i]);
+}
+
+function orderImagesByScore(resolve, reject) {
+  // order them in descending order
+  // the brigthest image has to be the first one
+  // the darkes image has to be the last one
+  for(let i = 0; i < fileScores.length - 1; i++)
+    for(let j = i + 1; j < fileScores.length; j++) {
+      if(fileScores[i] < fileScores[j]) {
+        let aux = fileScores[i];
+        fileScores[i] = fileScores[j];
+        fileScores[j] = aux;
+        aux = fileNames[i];
+        fileNames[i] = fileNames[j];
+        fileNames[j] = aux;
+        // check if the scores are orderd in the if, as well,
+        // to avoid not checking the last state of the vector
+        if(checkScoresAreOrdered()) resolve();
+      }
+      if(checkScoresAreOrdered()) resolve();
+    }
+}
+
 promiseReadingDir()
 .then(() => {
   console.log('finished reading dir files...');
   prmoiseSavingFileNames()
   .then(() => {
     console.log('saved all the file names!');
-    logAllTheScores();
+    promiseSaveAllTheScores()
+    .then(() => {
+      console.log('saved scores of the files');
+      promiseOrderImagesByScore()
+      .then(() => {
+        console.log('orderd images by score');
+        logFilesWithTheirScores();
+      })
+      .catch(err => {
+        throw err;
+      })
+    })
+    .catch(err => {
+      throw err;
+    })
   })
   .catch(err => {
     throw err;
