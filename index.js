@@ -41,6 +41,12 @@ function promiseOrderImagesByScore() {
   });
 }
 
+function promiseRenameFilesInOrder() {
+  return new Promise((resolve, reject) => {
+    renameFilesInOrder(resolve, reject);
+  });
+}
+
 function getImageScore(resolve, reject) {
   let img = gm(pathToImage);
   // Get the PNG buffer
@@ -93,12 +99,10 @@ function checkScoresAreOrdered() {
 function saveAllTheScores(resolve, reject) {
     for(let i = 0; i < fileNames.length; i++) {
         pathToImage = fileNames[i];
-        let localPathToImage = pathToImage;
         let localIndex = i;
         fileScores.push(-1);
         promiseImageScore()
         .then(imageScore => {
-          //console.log(localPathToImage + ' has a score of ' + imageScore);
           fileScores[localIndex] = imageScore;
           if(checkAllScoresAreSaved()) resolve();
         })
@@ -129,11 +133,6 @@ function readDir(resolve, reject) {
   });
 }
 
-function logFilesWithTheirScores() {
-  for(let i = 0; i < fileNames.length; i++) 
-    console.log(fileNames[i] + ' has a score of ' + fileScores[i]);
-}
-
 function orderImagesByScore(resolve, reject) {
   // order them in descending order
   // the brigthest image has to be the first one
@@ -155,6 +154,17 @@ function orderImagesByScore(resolve, reject) {
     }
 }
 
+function renameFilesInOrder(resolve, reject) {
+  for(let i = 0; i < fileNames.length; i++) {
+    let extenstion = fileNames[i].slice(fileNames[i].indexOf('.'));
+    let newName = pathToFolder + '/' + i + extenstion;
+    fs.rename(fileNames[i], newName, err => {
+      if (err) reject(err);
+      else if(i == fileNames.length - 1) resolve();
+    });
+  }
+}
+
 promiseReadingDir()
 .then(() => {
   console.log('finished reading dir files...');
@@ -166,8 +176,14 @@ promiseReadingDir()
       console.log('saved scores of the files');
       promiseOrderImagesByScore()
       .then(() => {
-        console.log('orderd images by score');
-        logFilesWithTheirScores();
+        console.log('ordered images by score');
+        promiseRenameFilesInOrder()
+        .then(() => {
+          console.log('renamed files in the right order!');
+        })
+        .catch(err => {
+          console.error(err);
+        })
       })
       .catch(err => {
         throw err;
